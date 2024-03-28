@@ -10,6 +10,12 @@ export const DIRECTIONS: Direction[] = [
   DIRECTION_DOWN,
 ];
 
+export const DIRECTION_Y = [DIRECTION_UP, DIRECTION_DOWN] as const;
+export type DirectionY = (typeof DIRECTION_Y)[number];
+
+export const DIRECTION_X = [DIRECTION_LEFT, DIRECTION_RIGHT] as const;
+export type DirectionX = (typeof DIRECTION_X)[number];
+
 const oppositeDirectionMap: { [k in Direction]: Direction } = {
   [DIRECTION_LEFT]: DIRECTION_RIGHT,
   [DIRECTION_RIGHT]: DIRECTION_LEFT,
@@ -17,5 +23,8 @@ const oppositeDirectionMap: { [k in Direction]: Direction } = {
   [DIRECTION_DOWN]: DIRECTION_UP,
 };
 
-export const getOppositeDirection = (d: Direction): Direction =>
-  oppositeDirectionMap[d];
+export function getOppositeDirection<T extends DirectionY | DirectionX>(
+  d: T
+): T {
+  return oppositeDirectionMap[d] as T;
+}

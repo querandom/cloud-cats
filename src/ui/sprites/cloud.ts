@@ -36,7 +36,9 @@ class Cloud extends AnimatableSprite {
     };
 
     this.animation = createLinealAnimationWithDefaults(this, screen, {
-      starterDirection: randomStarterDirection,
+      direction: {
+        x: randomStarterDirection,
+      },
     });
   }
 }

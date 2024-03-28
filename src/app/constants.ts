@@ -8,7 +8,7 @@ import cloud1 from "/assets/cloud-1.png";
 import cloud2 from "/assets/cloud-2.png";
 import cloud3 from "/assets/cloud-3.png";
 import cloud4 from "/assets/cloud-4.png";
-import questionMark from "/assets/question-mark.png";
+import bullet from "/assets/bullet.png";
 
 export const CLOUD_ASSETS = [
   {
@@ -78,7 +78,7 @@ export const ASSETS_CONFIG = [
   },
   {
     alias: "bullet",
-    src: questionMark,
+    src: bullet,
   },
   ...CAT_ASSETS,
   ...CLOUD_ASSETS,

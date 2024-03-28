@@ -7,43 +7,73 @@ import {
   DIRECTION_LEFT,
   DIRECTION_RIGHT,
   DIRECTION_UP,
-  Direction,
+  DirectionX,
+  DirectionY,
   getOppositeDirection,
 } from "../utils/direction";
 import { Coordinates } from "../utils/position";
 import { UIAnimation } from "./animation";
 
+type LinearDirection =
+  | {
+      y?: DirectionY;
+      x: DirectionX;
+    }
+  | {
+      y: DirectionY;
+      x?: DirectionX;
+    };
+
+interface BordersTouched {
+  xBorderTouched: boolean;
+  yBorderTouched: boolean;
+}
+
 export interface LinearAnimationConfig extends AnimationConfig {
-  onReachedLimit?: (animation: LinearAnimation) => void;
-  starterDirection: Direction;
+  onReachLimit?: (
+    animation: LinearAnimation,
+    bordersTouched: BordersTouched
+  ) => void;
+  direction: LinearDirection;
   // this property only makes sense if there is a rectangle to check
   canDisappear: boolean;
+  // bounce: boolean
   layout?: Rectangle;
 }
 
 export const defaultLinearConfig: LinearAnimationConfig = {
-  // By default the animation is infinite
-  infinite: true,
+  // By default the animation is not infinite
+  infinite: false,
+  // bounce:
   speed: DEFAULT_SPEED,
-  starterDirection: DIRECTION_RIGHT,
+  //
+  direction: {
+    x: DIRECTION_RIGHT,
+  },
   canDisappear: false,
 };
 
 export class LinearAnimation<
   C extends LinearAnimationConfig = LinearAnimationConfig
 > extends UIAnimation<C> {
-  _currentDirection: Direction;
+  protected _currentDirections: LinearDirection;
 
   constructor(element: BaseUIElement, config: C) {
     super(element, config);
 
-    this._currentDirection = this.config.starterDirection;
+    this._currentDirections = this.config.direction;
   }
 
-  protected hasReachedLimit() {
+  protected hasReachedLimit(): {
+    xBorderTouched: boolean;
+    yBorderTouched: boolean;
+  } {
+    let xBorderTouched = false;
+    let yBorderTouched = false;
+
     // if no parent, it will move to a direction for ever
     if (!this.config.layout) {
-      return false;
+      return { xBorderTouched, yBorderTouched };
     }
 
     const canDisappear = this.config.canDisappear;
@@ -51,72 +81,128 @@ export class LinearAnimation<
     const { width, height } = this.element.getSize();
     const { x, y } = this.element.position;
 
-    const hasTouchedCornerFn = {
+    const hasTouchedXCornerFn = {
       [DIRECTION_LEFT]: x <= (canDisappear ? -width : 0),
       [DIRECTION_RIGHT]:
         x >= this.config.layout.width - (canDisappear ? 0 : width),
-      [DIRECTION_UP]: y <= (canDisappear ? 0 : -height),
+    };
+
+    const hasTouchedYCornerFn = {
+      [DIRECTION_UP]: y <= (canDisappear ? -height : 0),
       [DIRECTION_DOWN]:
-        y >= this.config.layout.height - (canDisappear ? height : 0),
+        y >= this.config.layout.height - (canDisappear ? 0 : height),
     };
 
-    return hasTouchedCornerFn[this._currentDirection];
+    if (this._currentDirections.x) {
+      xBorderTouched = hasTouchedXCornerFn[this._currentDirections.x];
+    }
+
+    if (this._currentDirections.y) {
+      yBorderTouched = hasTouchedYCornerFn[this._currentDirections.y];
+    }
+
+    return { xBorderTouched, yBorderTouched };
   }
 
-  protected onReachLimit() {
-    this.config.onReachedLimit
-      ? this.config.onReachedLimit(this)
-      : this._onReachLimit();
+  protected onReachLimit(bordersTouched: BordersTouched) {
+    this.config.onReachLimit
+      ? this.config.onReachLimit(this, bordersTouched)
+      : this._onReachLimit(bordersTouched);
   }
 
-  private _onReachLimit() {
-    this._currentDirection = getOppositeDirection(this._currentDirection);
+  switchDirection() {
+    if (this._currentDirections.x) {
+      this._currentDirections.x = getOppositeDirection(
+        this._currentDirections.x
+      );
+    }
+    if (this._currentDirections.y) {
+      this._currentDirections.y = getOppositeDirection(
+        this._currentDirections.y
+      );
+    }
   }
 
-  protected _moveLeft() {
+  // on reach limit switches the direction, this could be overridden
+  // by the config `onReachLimit`
+  private _onReachLimit({ xBorderTouched, yBorderTouched }: BordersTouched) {
+    // switch directions
+    const switchDirection = () => {
+      if (xBorderTouched && this._currentDirections.x) {
+        this._currentDirections.x = getOppositeDirection(
+          this._currentDirections.x
+        );
+      }
+      if (yBorderTouched && this._currentDirections.y) {
+        this._currentDirections.y = getOppositeDirection(
+          this._currentDirections.y
+        );
+      }
+    };
+
+    switchDirection();
+  }
+
+  protected _moveLeft({ x, y }: Coordinates): Coordinates {
     return {
-      x: this.element.x - this.config.speed,
-      y: this.element.y,
+      x: x - this.config.speed,
+      y,
     };
   }
 
-  protected _moveRight() {
+  protected _moveRight({ x, y }: Coordinates): Coordinates {
     return {
-      x: this.element.x + this.config.speed,
-      y: this.element.y,
+      x: x + this.config.speed,
+      y,
     };
   }
-  protected _moveUp() {
+  protected _moveUp({ x, y }: Coordinates): Coordinates {
     return {
-      x: this.element.x,
-      y: this.element.y - this.config.speed,
+      x,
+      y: y - this.config.speed,
     };
   }
 
-  protected _moveDown() {
+  protected _moveDown({ x, y }: Coordinates): Coordinates {
     return {
-      x: this.element.x,
-      y: this.element.y + this.config.speed,
+      x,
+      y: y + this.config.speed,
     };
   }
 
   protected _getNextPosition(): Coordinates {
-    const nextDirectionMap = {
-      [DIRECTION_LEFT]: this._moveLeft(),
-      [DIRECTION_RIGHT]: this._moveRight(),
-
-      [DIRECTION_UP]: this._moveUp(),
-      [DIRECTION_DOWN]: this._moveDown(),
+    type DirectionMap<T extends string> = {
+      [k in T]: (d: Coordinates) => Coordinates;
     };
 
-    return nextDirectionMap[this._currentDirection];
+    const nextXDirectionMap: DirectionMap<DirectionX> = {
+      [DIRECTION_LEFT]: (d: Coordinates) => this._moveLeft(d),
+      [DIRECTION_RIGHT]: (d: Coordinates) => this._moveRight(d),
+    };
+
+    const nextYDirectionMap: DirectionMap<DirectionY> = {
+      [DIRECTION_UP]: (d: Coordinates) => this._moveUp(d),
+      [DIRECTION_DOWN]: (d: Coordinates) => this._moveDown(d),
+    };
+
+    let position: Coordinates = this.element.position;
+    if (this._currentDirections.x) {
+      position = nextXDirectionMap[this._currentDirections.x](position);
+    }
+
+    if (this._currentDirections.y) {
+      position = nextYDirectionMap[this._currentDirections.y](position);
+    }
+
+    return position;
   }
 
   getNextPosition(): PointData {
     const nextPosition = this._getNextPosition();
 
-    if (this.hasReachedLimit()) {
-      this.onReachLimit();
+    const { xBorderTouched, yBorderTouched } = this.hasReachedLimit();
+    if (xBorderTouched || yBorderTouched) {
+      this.onReachLimit({ xBorderTouched, yBorderTouched });
     }
 
     return nextPosition;

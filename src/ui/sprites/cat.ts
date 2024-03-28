@@ -74,12 +74,13 @@ class Cat extends AnimatableSprite {
     const mood = ANIMATION_MOVE[speed];
 
     this.animation = createSineAnimationWithDefaults(this, screen, {
-      starterDirection: startedSide,
+      direction: {
+        x: startedSide,
+      },
       canDisappear: true,
-      infinite: false,
       angleDelta: mood.angle,
       speed: mood.speed,
-      onReachedLimit: (animation) => {
+      onReachLimit: (animation) => {
         animation.stopAnimation();
 
         setTimeout(() => {

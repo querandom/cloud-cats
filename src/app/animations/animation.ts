@@ -15,8 +15,6 @@ export abstract class UIAnimation<
     this._stoppedAnimation = false;
   }
 
-  // can I just add a reset()
-  reset(): void {}
   abstract getNextPosition(): Coordinates;
   public animate() {
     if (!this._stoppedAnimation) {

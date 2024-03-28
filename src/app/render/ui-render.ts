@@ -9,6 +9,7 @@ import { createCloudSprite } from "../../ui/sprites/cloud";
 import { CAT_ASSETS_CONFIG, CLOUD_ASSETS } from "../constants";
 import { UIAnimatable } from "../animations/animation";
 import { createCatSprite } from "../../ui/sprites/cat";
+import { BulletAsset, createBulletSprite } from "../../ui/sprites/bullet";
 
 export const createCloudFromAssets = () => {
   return CLOUD_ASSETS.map(({ alias }) => {
@@ -34,6 +35,7 @@ class UIRender {
       cannon: createCannonSprite(),
       clouds: createCloudFromAssets(),
       cats: createCatsFromAssets(),
+      bullets: Array.from<BulletAsset>([]),
     };
 
     this.init();
@@ -45,23 +47,31 @@ class UIRender {
     componentList.forEach((cmp) => cmp.init(screen));
   }
 
+  private get animatableElements(): UIAnimatable[] {
+    const { cats, clouds, bullets } = this.componentsMap;
+    const animatableElement = [...cats, ...clouds, ...bullets];
+    return animatableElement;
+  }
+
   render() {
     const state = this.app.stage;
     const btns = this.createButtonGroup();
 
     const elements = [...Object.values(this.componentsMap), ...btns].flat();
 
-    // get animated components
-    const { cats, clouds } = this.componentsMap;
-    this.setUpAnimations([...clouds, ...cats]);
-
     elements.forEach((cmp) => state.addChild(cmp));
+
+    this.app.ticker.add(() => {
+      this.animatableElements.forEach((a) => a.animate());
+    });
   }
 
-  private setUpAnimations(animatableElements: UIAnimatable[]) {
-    this.app.ticker.add(() => {
-      animatableElements.forEach((a) => a.animate());
-    });
+  renderBullet() {
+    const bullet = createBulletSprite();
+    bullet.init(this.app.screen);
+    this.componentsMap.bullets.push(bullet);
+    // this._bullets = [...this._bullets, bullet]
+    this.app.stage.addChild(bullet);
   }
 
   /**
@@ -73,7 +83,20 @@ class UIRender {
     const aboutBtn = new ActionTextButton("About");
     const resetBtn = new ActionTextButton("Reset");
 
-    const cannon = this.componentsMap["cannon"];
+    resetBtn.on("pointerdown", () => {
+      this.componentsMap.bullets.forEach((entry) => {
+        entry.destroy();
+        this.app.stage.removeChild(entry);
+      });
+
+      this.componentsMap.bullets = [];
+    });
+    shootBtn.on("pointerdown", () => {
+      this.renderBullet();
+      console.log("pointer shoot");
+    });
+
+    const cannon = this.componentsMap.cannon;
     if (cannon) {
       /**
        * position to render:
@@ -99,55 +122,8 @@ class UIRender {
       };
     }
 
-    /**
-     * new Btn('', onClick: () => {
-     *
-     * const bullet = new Bullet();
-     * const position = this.cannon.getPosition()
-     * bullet.setPosition(position)
-     * bullet.initPosition(position)
-     * app.stage.addChild(bullet);
-     * app.ticker.add(() => bullet.animate() )
-     * })
-     *
-     * const position = this.cannon.getPosition()
-     * btn.setPosition(position)
-     *
-     */
-
     return [aboutBtn, shootBtn, resetBtn];
   }
-
-  // initCats(cats: { image: Sprite; direction: Direction }[]) {
-  //   // const cat = new AnimatedCat(src, direction)
-  //   // cat.initPosition(this.app.screen)
-  //   // cat.animate()
-  //   const animatedCats = cats.map(({ image, direction }) => {
-  //     return new SineAnimation(image, this.app.screen, {
-  //       direction,
-  //       speed: getRandomNumberInBetween(MAX_CAT_SPEED, MIN_CAT_SPEED),
-  //       angleDelta: getRandomNumberInBetween(MAX_CAT_ANGLE, MIN_CAT_ANGLE),
-  //       // remove this feature
-  //       rangePosition: {
-  //         min: getRandomNumberInBetween(85, 75),
-  //         max: getRandomNumberInBetween(85, 75),
-  //       },
-  //     });
-  //   });
-
-  //   console.log(this.app.ticker);
-  //   this.app.ticker.add(() => {
-  //     // TODO: add delay feature
-  //     // if (entry.hasTouchedCorner()) {
-  //     //   change position to random place in a range
-  //     //   switch to opposite direction
-  //     // }
-  //     // animate()
-  //     animatedCats.forEach((entry) => entry.animate());
-  //   });
-
-  //   return this;
-  // }
 }
 
 export const renderApp = (app: App) => {
