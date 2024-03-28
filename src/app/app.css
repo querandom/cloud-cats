@@ -1,0 +1,19 @@
+/* cloud-cats::part(app-container) {
+  width: 100vw;
+  height: 100vh;
+  background-image: var(--background-image);
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position-x: right;
+  background-position-y: bottom;
+}
+
+cloud-cats::part(circle) {
+  display: block;
+  background-color: red;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+}
+ */
+/* main-layout::slotted()  */
