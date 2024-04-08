@@ -1,4 +1,3 @@
-import { Rectangle } from "pixi.js";
 import { AnimatableSprite } from "./base-sprite";
 import { percentage } from "../../app/utils/number";
 import {
@@ -7,6 +6,7 @@ import {
 } from "../../app/utils/random";
 import { DIRECTION_LEFT, DIRECTION_RIGHT } from "../../app/utils/direction";
 import { createSineAnimationWithDefaults } from "../../app/animations/sinusoidal";
+import { BaseUIElement } from "../../app/types";
 
 const maxPercentage = 85;
 const minPercentage = 75;
@@ -40,7 +40,8 @@ type ValidDirection = (typeof VALID_DIRECTIONS)[number];
 const isValidDirection = (value: any): value is ValidDirection =>
   VALID_DIRECTIONS.includes(value);
 
-class Cat extends AnimatableSprite {
+export class CatSprite extends AnimatableSprite {
+  label = "cat";
   private _startFrom: ValidDirection = DIRECTION_RIGHT;
 
   get startFrom() {
@@ -51,7 +52,7 @@ class Cat extends AnimatableSprite {
     this._startFrom = isValidDirection(value) ? value : this._startFrom;
   }
 
-  init(screen: Rectangle) {
+  init(screen: BaseUIElement) {
     const startedSide = this._startFrom;
     // random percentage of the screen height
     // this will give the sensation of new every time
@@ -92,5 +93,5 @@ class Cat extends AnimatableSprite {
 }
 
 export const createCatSprite = (src: string) => {
-  return new Cat(src);
+  return new CatSprite(src);
 };

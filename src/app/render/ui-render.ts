@@ -5,10 +5,9 @@ import { DEFAULT_BUTTONS_MARGIN } from "./constants";
 import { App } from "../app";
 import { createBackgroundSprite } from "../../ui/sprites/background";
 import { createCannonSprite } from "../../ui/sprites/cannon";
-import { createCloudSprite } from "../../ui/sprites/cloud";
+import { CloudWrapper, createCloudSprite } from "../../ui/sprites/cloud";
 import { CAT_ASSETS_CONFIG, CLOUD_ASSETS } from "../constants";
-import { UIAnimatable } from "../animations/animation";
-import { createCatSprite } from "../../ui/sprites/cat";
+import { CatSprite, createCatSprite } from "../../ui/sprites/cat";
 import { BulletAsset, createBulletSprite } from "../../ui/sprites/bullet";
 
 export const createCloudFromAssets = () => {
@@ -25,53 +24,76 @@ export const createCatsFromAssets = () => {
   });
 };
 
+// Test For Hit
+// A basic AABB check between two different squares
+function testForAABB(object1: any, object2: any) {
+  const bounds1 = object1.getBounds();
+  const bounds2 = object2.getBounds();
+
+  return (
+    bounds1.x < bounds2.x + bounds2.width &&
+    bounds1.x + bounds1.width > bounds2.x &&
+    bounds1.y < bounds2.y + bounds2.height &&
+    bounds1.y + bounds1.height > bounds2.y
+  );
+}
+
 // Contains the logic to position all the elements in its corresponding place.
 class UIRender {
-  private componentsMap;
+  constructor(private app: ApplicationEngine) {}
 
-  constructor(private app: ApplicationEngine) {
-    this.componentsMap = {
-      bg: createBackgroundSprite(),
-      cannon: createCannonSprite(),
-      clouds: createCloudFromAssets(),
-      cats: createCatsFromAssets(),
-      bullets: Array.from<BulletAsset>([]),
-    };
-
-    this.init();
-  }
-
-  init() {
+  createComponents() {
     const screen = this.app.screen;
-    const componentList = Object.values(this.componentsMap).flat();
-    componentList.forEach((cmp) => cmp.init(screen));
-  }
+    const componentList = [
+      createBackgroundSprite(),
+      createCannonSprite(),
+      ...createCloudFromAssets(),
+      ...createCatsFromAssets(),
+    ];
 
-  private get animatableElements(): UIAnimatable[] {
-    const { cats, clouds, bullets } = this.componentsMap;
-    const animatableElement = [...cats, ...clouds, ...bullets];
-    return animatableElement;
+    componentList.forEach((cmp) => cmp.init(screen));
+
+    return componentList;
   }
 
   render() {
     const state = this.app.stage;
+
+    const components = this.createComponents();
+
+    state.addChild(...components);
+
     const btns = this.createButtonGroup();
+    state.addChild(...btns);
 
-    const elements = [...Object.values(this.componentsMap), ...btns].flat();
-
-    elements.forEach((cmp) => state.addChild(cmp));
+    const clouds = this.app.stage.getChildrenByLabel(
+      "cloud-wrapper"
+    ) as CloudWrapper[];
+    const cats = this.app.stage.getChildrenByLabel("cat") as CatSprite[];
+    const animatableElements = [...clouds, ...cats];
 
     this.app.ticker.add(() => {
-      this.animatableElements.forEach((a) => a.animate());
-    });
-  }
+      // Bullet collision check
+      const bullets = this.app.stage.getChildrenByLabel(
+        "bullet"
+      ) as BulletAsset[];
 
-  renderBullet() {
-    const bullet = createBulletSprite();
-    bullet.init(this.app.screen);
-    this.componentsMap.bullets.push(bullet);
-    // this._bullets = [...this._bullets, bullet]
-    this.app.stage.addChild(bullet);
+      [...animatableElements, ...bullets].forEach((a) => a.animate());
+
+      if (!bullets.length) return;
+
+      bullets.map((bullet) => {
+        clouds.forEach((cloud) => {
+          const touched = testForAABB(cloud, bullet);
+
+          if (touched) {
+            bullet.animation?.stopAnimation();
+            cloud.addChild(bullet);
+            bullet.position = { x: 10, y: 10 };
+          }
+        });
+      });
+    });
   }
 
   /**
@@ -80,23 +102,30 @@ class UIRender {
    */
   createButtonGroup(): ActionTextButton[] {
     const shootBtn = new ActionTextButton("Shoot");
-    const aboutBtn = new ActionTextButton("About");
+    // const aboutBtn = new ActionTextButton("About");
     const resetBtn = new ActionTextButton("Reset");
 
-    resetBtn.on("pointerdown", () => {
-      this.componentsMap.bullets.forEach((entry) => {
+    const resetCallback = () => {
+      const bullets = this.app.stage.getChildrenByLabel("bullet", true);
+
+      bullets.forEach((entry) => {
         entry.destroy();
         this.app.stage.removeChild(entry);
       });
+    };
+    resetBtn.on("pointerdown", resetCallback);
 
-      this.componentsMap.bullets = [];
-    });
-    shootBtn.on("pointerdown", () => {
-      this.renderBullet();
-      console.log("pointer shoot");
-    });
+    const shootBulletCallback = () => {
+      const bullet = createBulletSprite();
+      bullet.init(this.app.screen);
 
-    const cannon = this.componentsMap.cannon;
+      this.app.stage.addChild(bullet);
+    };
+    shootBtn.on("pointerdown", shootBulletCallback);
+
+    // get cannon from screen
+    const cannon = this.app.stage.getChildByLabel("cannon");
+
     if (cannon) {
       /**
        * position to render:
@@ -115,14 +144,15 @@ class UIRender {
         y: resetBtn.y,
       };
 
-      const aboutBtnCoords = getBottomLeftCoords(shootBtn);
-      aboutBtn.position = {
-        x: aboutBtnCoords.x,
-        y: aboutBtnCoords.y + DEFAULT_BUTTONS_MARGIN,
-      };
+      // const aboutBtnCoords = getBottomLeftCoords(shootBtn);
+      // aboutBtn.position = {
+      //   x: aboutBtnCoords.x,
+      //   y: aboutBtnCoords.y + DEFAULT_BUTTONS_MARGIN,
+      // };
     }
 
-    return [aboutBtn, shootBtn, resetBtn];
+    // return [aboutBtn, shootBtn, resetBtn];
+    return [shootBtn, resetBtn];
   }
 }
 

@@ -1,4 +1,4 @@
-import type { BaseUIElement } from "../types";
+import type { UIElement } from "../types";
 import { Coordinates } from "../utils/position";
 import type { AnimationConfig } from "./types";
 
@@ -6,7 +6,7 @@ export abstract class UIAnimation<
   TConfig extends AnimationConfig = AnimationConfig
 > {
   protected _stoppedAnimation: boolean = false;
-  constructor(protected element: BaseUIElement, protected config: TConfig) {}
+  constructor(protected element: UIElement, protected config: TConfig) {}
 
   public stopAnimation() {
     this._stoppedAnimation = true;

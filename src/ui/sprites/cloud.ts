@@ -1,5 +1,4 @@
-import { Rectangle } from "pixi.js";
-import { AnimatableSprite } from "./base-sprite";
+import { AnimatableContainer } from "./base-sprite";
 import {
   getRandomValue,
   getRandomNumberInBetween,
@@ -7,14 +6,18 @@ import {
 import { DIRECTION_LEFT, DIRECTION_RIGHT } from "../../app/utils/direction";
 import { percentage } from "../../app/utils/number";
 import { createLinealAnimationWithDefaults } from "../../app/animations/linear";
+import { BaseUIElement } from "../../app/types";
+import { Sprite } from "pixi.js";
 
 const minPercentage = 0;
 const maxPercentage = 40;
 
 const VALID_DIRECTIONS = [DIRECTION_LEFT, DIRECTION_RIGHT] as const;
 
-class Cloud extends AnimatableSprite {
-  init(screen: Rectangle): void {
+export class CloudWrapper extends AnimatableContainer {
+  label = "cloud-wrapper";
+
+  init(screen: BaseUIElement): void {
     // select a random direction to start with
     const randomStarterDirection = getRandomValue(VALID_DIRECTIONS);
 
@@ -44,5 +47,11 @@ class Cloud extends AnimatableSprite {
 }
 
 export const createCloudSprite = (src: string) => {
-  return new Cloud(src);
+  const wrapper = new CloudWrapper();
+  const cloud = Sprite.from(src);
+  cloud.label = "cloud";
+
+  wrapper.addChild(cloud);
+
+  return wrapper;
 };

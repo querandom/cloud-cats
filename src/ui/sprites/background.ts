@@ -1,9 +1,9 @@
-import { Rectangle } from "pixi.js";
 import { BaseSprite } from "./base-sprite";
+import { BaseUIElement } from "../../app/types";
 
 class Background extends BaseSprite {
   // set size and position
-  init(screen: Rectangle): void {
+  init(screen: BaseUIElement): void {
     if (screen.width > screen.height) {
       console.log("landscape screen");
 

@@ -1,7 +1,7 @@
 import { DEFAULT_SPEED } from "./constants";
 import type { AnimationConfig } from "./types";
-import type { BaseUIElement } from "../types";
-import { PointData, Rectangle } from "pixi.js";
+import type { BaseUIElement, UIElement } from "../types";
+import { PointData } from "pixi.js";
 import {
   DIRECTION_DOWN,
   DIRECTION_LEFT,
@@ -38,7 +38,7 @@ export interface LinearAnimationConfig extends AnimationConfig {
   // this property only makes sense if there is a rectangle to check
   canDisappear: boolean;
   // bounce: boolean
-  layout?: Rectangle;
+  layout?: BaseUIElement;
 }
 
 export const defaultLinearConfig: LinearAnimationConfig = {
@@ -58,7 +58,7 @@ export class LinearAnimation<
 > extends UIAnimation<C> {
   protected _currentDirections: LinearDirection;
 
-  constructor(element: BaseUIElement, config: C) {
+  constructor(element: UIElement, config: C) {
     super(element, config);
 
     this._currentDirections = this.config.direction;
@@ -210,8 +210,8 @@ export class LinearAnimation<
 }
 
 export const createLinealAnimationWithDefaults = (
-  element: BaseUIElement,
-  layout: Rectangle,
+  element: UIElement,
+  layout: UIElement,
   opts: Partial<LinearAnimationConfig> = {}
 ) => {
   return new LinearAnimation(element, {

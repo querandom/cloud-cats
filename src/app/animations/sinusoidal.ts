@@ -1,4 +1,3 @@
-import type { Rectangle } from "pixi.js";
 import { DEFAULT_ANGLE_DELTA } from "./constants";
 
 import {
@@ -6,7 +5,7 @@ import {
   LinearAnimationConfig,
   defaultLinearConfig,
 } from "./linear";
-import { BaseUIElement } from "../types";
+import { UIElement } from "../types";
 
 interface SineAnimationConfig extends LinearAnimationConfig {
   angleDelta: number;
@@ -62,8 +61,8 @@ export class SineAnimation extends LinearAnimation<SineAnimationConfig> {
 }
 
 export const createSineAnimationWithDefaults = (
-  element: BaseUIElement,
-  rectangle: Rectangle,
+  element: UIElement,
+  rectangle: UIElement,
   opts: Partial<SineAnimationConfig> = {}
 ) => {
   return new SineAnimation(element, {
